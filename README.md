@@ -3,19 +3,25 @@ Repositorio de los dioses de los fierros del semestre i
 
 ¡¡¡¡¡¡¡¡¡CULO EL QUE NO COMENTE SU CODIGO!!!!!!!!!!!!!!!
 
+Cuando vean <algo> quiere decir que deben escribir lo que quieran pero sin los "<>"
+
+Ya que tengan GIT instalado en su computadora se van a algún directorio y hacen lo siguiente:
+
+    git clone <URL DEL REPO>
+
 Una vez que hayan clonado el repo a su compu hagan lo siguiente:
 
     git pull
 
-    git branch suNombre
+    git branch <suNombre>
 
-    git checkout suNombre
+    git checkout <suNombre>
 
-    git branch --set-upstream-to=origin/suNombre
+    git branch --set-upstream-to=origin/<suNombre>
 
 Esto permite que ahora tengan una "branch" propia y ahí pueden modificar todo lo que quieran sin
 afectar al archivo original ni el de los demás. También tienen un respaldo en línea al haber hecho
-lo de "--set-upstream-to-origin/suNombre".
+lo de "--set-upstream-to-origin/<suNombre>".
 Véanlo como una especie de contenedor en donde pueden agregar archivos nuevos o modificar los que 
 ya están pero sin que nada afecte a otras áreas.
 
@@ -24,7 +30,7 @@ Una vez que hayan hecho cambios y los quieran pushear a su branch van a hacer lo
 
     git add . --> Esto permite agregar todos los cambios de los archivos.
 
-    git add archivo.xxx --> Esto permite agregar los cambios en los archivos que quieran uno por uno.
+    git add <archivo.xxx> --> Esto permite agregar los cambios en los archivos que quieran uno por uno.
 
     git commit -m "Mensaje corto que explique los cambios que hicieron" --> Traten de ser concizos.
 
