@@ -22,7 +22,7 @@ ya están pero sin que nada afecte a otras áreas.
 
 Una vez que hayan hecho cambios y los quieran pushear a su branch van a hacer lo siguiente:
 
-1.- git add . --> Esto permite agregar todos los cambios de los archivos.
+1.-    git add . --> Esto permite agregar todos los cambios de los archivos.
 
     git add archivo.xxx --> Esto permite agregar los cambios en los archivos que quieran uno por uno.
 
