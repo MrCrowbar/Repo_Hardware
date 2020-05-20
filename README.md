@@ -3,6 +3,8 @@ Repositorio de los dioses de los fierros del semestre i
 
 ¡¡¡¡¡¡¡¡¡CULO EL QUE NO COMENTE SU CODIGO!!!!!!!!!!!!!!!
 
+A continuación les dejo una pequeña guía de los pasos que deben hacer y los comandos principales.
+
 Cuando vean <algo> quiere decir que deben escribir lo que quieran pero sin los "<>"
 
 Ya que tengan GIT instalado en su computadora se van a algún directorio y hacen lo siguiente:
@@ -55,3 +57,6 @@ En resumen esto es lo que deben hacer antes y después de trabajar(no siempre pe
     git commit -m "Mensaje corto que explique los cambios que hicieron"
 
     git push
+
+¡¡¡¡¡ANTES DE TRABAJAR EN ALGUN DOCUMENTO ASEGURENSE DE ABRIR UNA TERMINAL Y CORROBORRAR QUE ESTAN EN LA BRANCH ADECUADA
+Y QUE YA HICIERON PULL!!!!!
