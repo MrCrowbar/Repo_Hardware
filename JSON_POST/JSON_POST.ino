@@ -1,43 +1,50 @@
 #include <ArduinoJson.h>
 #include "ESP8266HTTPClient.h"
 #include "ESP8266WiFi.h"
-#include "generador.h"
 
-//Declaracion de variables globales
-char output[500];
+//Declaracion de variables globales.
+char output[500]; //Falta ajustar el tamaño para que no se desperdicie memoria.
 String tanqueID, lugarID, fecha, stringOutput;
 
-//Declaracion de funciones
+//Declaracion de funciones.
 String setTanqueEsta(String tanqueID, String lugarID, String fecha);
 String createTanqueEsta(String tanqueID, String lugarID, String fecha);
-String creatTanque(String tanqueID, String calidad, String estadoValvula, float pesoActual, float peso, String fechaEsperadaRetorno, int idEtiqueta, String idContenido, String idDueno, String fechaIngreso, String observaciones);
 void entablarConexiones();
+void hacerPeticion();
+
+//En teoria no vamos a crear tanques pero sirve como ejemplo para formular los JSON y para hacer pruebas.
+String createTanque(String tanqueID, String calidad, String estadoValvula, float pesoActual, float peso, String fechaEsperadaRetorno, int idEtiqueta, String idContenido, String idDueno, String fechaIngreso, String observaciones);
+
 
 void setup() {
-  entablarConexiones();
+  entablarConexiones(); //Hasta no entablar la conexion no se procede a generar recursos que no se pueden utilizar.
   stringOutput = String();
   tanqueID = String("EURO5149ZZ");
   lugarID = String("AMC");
   fecha = String("2122-10-03T10:00:00Z");
-  //Generador miGenerador();
-  //miGenerador.createTanqueEsta(tanqueID,lugarID,fecha);
-  
-  //stringOutput = createTanqueEsta(tanqueID,lugarID,fecha);
-  //stringOutput = createTanque(tanqueID,lugarID,"estadoJacobo",50,100,"2020-10-10T10:00:00Z",777,"Comida","JacoboID","2020-05-05T10:00:00Z","Se ve mamalon");
-  stringOutput = setTanqueEsta(tanqueID,lugarID,fecha);
+  stringOutput = setTanqueEsta(tanqueID,lugarID,fecha); //Esta variable almacena el formato JSON que va a cargarse en el POST.
   Serial.println(stringOutput);
+  hacerPeticion(); //Hacer la peticion POST, no hace falta pasar "stringOutput" porque es una variable global.
+}
+
+void loop() {
+  //Esta vacio ya que no queremos mandar la misma peticion varias veces, por el momento solamente estamos mandandola una vez.
+}
+
+void hacerPeticion(){
+  //Al ser la direccion del servidor tampoco queremos que este de manera global asi que la deje dentro de esta funcion.
   if(WiFi.status()== WL_CONNECTED){
-   HTTPClient http;   
-   http.begin("http://18.219.108.70:5201/graphql");
-   http.addHeader("Content-Type", "application/json");
-   int httpResponseCode = http.POST(stringOutput);
-   if(httpResponseCode>0){
-    String response = http.getString();   
-    Serial.println(httpResponseCode);
-    Serial.println(response);          
-   }else{
-    Serial.print("Error on sending POST Request: ");
-    Serial.println(httpResponseCode);
+    HTTPClient http;   
+    http.begin("http://18.219.108.70:5201/graphql");
+    http.addHeader("Content-Type", "application/json");
+    int httpResponseCode = http.POST(stringOutput);
+    if(httpResponseCode>0){
+      String response = http.getString();   
+      Serial.println(httpResponseCode);
+      Serial.println(response);          
+    }else{
+      Serial.print("Error on sending POST Request: ");
+      Serial.println(httpResponseCode);
    }
    http.end();
  }else{
@@ -45,29 +52,32 @@ void setup() {
  }
 }
 
-void loop() {
-  /*Esta comentado para no tener que hacer peticiones si aun no sirve el query*/
-  
-
-  delay(5000);
+void entablarConexiones(){
+  //Aqui puse los ssid ya que no queremos que sean variables globales por ser credenciales de seguridad.
+  const char* ssid = "";
+  const char* password = "";
+  Serial.begin(9600);
+  WiFi.begin(ssid, password); 
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting to WiFi..");
+  }
+  Serial.println("Connected to the WiFi network");
+  while (!Serial) continue;
 }
 
 String createTanqueEsta(String tanqueID, String lugarID, String fecha){
-  //Generacion del JSON
-  //Se genera unicamente el json correspondiente a "tanqueEstaInput" ya que posteriormente se le agregara el inicio y final del query
-  DynamicJsonDocument  root(200);
+  DynamicJsonDocument  root(200); //Documento raiz del JSON
   root["query"].set("mutation($tank: TanqueEstaInput){createTanqueEsta(tanqueEstaInput: $tank)}");
-  JsonObject variables = root.createNestedObject("variables");
-  JsonObject tank = variables.createNestedObject("tank");
-  JsonObject id = tank.createNestedObject("id");
+  JsonObject variables = root.createNestedObject("variables"); //Creacion de objeto anidado "variables" dentro de "root".
+  JsonObject tank = variables.createNestedObject("tank"); //Creacion de objeto anidado "tank" dentro de "variables".
+  JsonObject id = tank.createNestedObject("id"); //Creacion de objeto anidado "id" dentro de "tank".
   id["idTanque"].set(tanqueID);
   id["idLugar"].set(lugarID);
   tank["fecha"].set(fecha);
-  //Sacar el json root a la variable output
-  serializeJson(root, output);
-  //Sacar el json root a la terminal bien bonito
-  serializeJsonPretty(root, Serial);
-  return output;
+  serializeJson(root, output); //Serializar el documento JSON "root" a la variable output en el formato listo a enviar al servidor.
+  serializeJsonPretty(root, Serial); //Imprimir en la terminal de manera completa el JSON generado.
+  return output; //Regresar el archivo que va a cargarse en la peticion POST.
 }
 
 String createTanque(String tanqueID, String calidad, String estadoValvula, float pesoActual, float peso, String fechaEsperadaRetorno, int idEtiqueta, String idContenido, String idDueno, String fechaIngreso, String observaciones){
@@ -104,18 +114,4 @@ String setTanqueEsta(String tanqueID, String lugarID, String fecha){
   serializeJson(root, output);
   serializeJsonPretty(root, Serial);
   return output;
-}
-
-void entablarConexiones(){
-  // Initialize Serial port
-  const char* ssid = "INFINITUM9209_2.4";
-  const char* password = "4by3rg4JgD";
-  Serial.begin(9600);
-  WiFi.begin(ssid, password); 
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.println("Connecting to WiFi..");
-  }
-  Serial.println("Connected to the WiFi network");
-  while (!Serial) continue;
 }
