@@ -1,71 +1,48 @@
-#include <ArduinoJson.h>
-#include "ESP8266HTTPClient.h"
-#include "ESP8266WiFi.h"
+#include <NTPClient.h>
+#include <WiFiUdp.h>
+#include "funciones.h"
+
+#define GMT_MEXICO -18000
+#define OUTPUT_SIZE 500
 
 //Declaracion de variables globales.
-char output[500]; //Falta ajustar el tamaño para que no se desperdicie memoria.
+char output[OUTPUT_SIZE]; //Falta ajustar el tamaño para que no se desperdicie memoria.
 String tanqueID, lugarID, fecha, stringOutput;
 
+//Servidor para tiempo.
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP, "pool.ntp.org");
+String weekDays[7] = {"Domingo","Lunes","Martes","Miercoles","Jueves","Viernes","Sabado"};
+String months[12] = {"Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"};
+
 //Declaracion de funciones.
-String setTanqueEsta(String tanqueID, String lugarID, String fecha);
-String createTanqueEsta(String tanqueID, String lugarID, String fecha);
-void entablarConexiones();
-void hacerPeticion();
+//String setTanqueEsta(String tanqueID, String lugarID, String fecha);
+//String createTanqueEsta(String tanqueID, String lugarID, String fecha);
 
 //En teoria no vamos a crear tanques pero sirve como ejemplo para formular los JSON y para hacer pruebas.
-String createTanque(String tanqueID, String calidad, String estadoValvula, float pesoActual, float peso, String fechaEsperadaRetorno, int idEtiqueta, String idContenido, String idDueno, String fechaIngreso, String observaciones);
+//String createTanque(String tanqueID, String calidad, String estadoValvula, float pesoActual, float peso, String fechaEsperadaRetorno, int idEtiqueta, String idContenido, String idDueno, String fechaIngreso, String observaciones);
 
 
 void setup() {
   entablarConexiones(); //Hasta no entablar la conexion no se procede a generar recursos que no se pueden utilizar.
+  timeClient.begin();
+  timeClient.setTimeOffset(GMT_MEXICO);
+  timeClient.update();
   stringOutput = String();
   tanqueID = String("EURO5149ZZ");
   lugarID = String("AMC");
   fecha = String("2122-10-03T10:00:00Z");
   stringOutput = setTanqueEsta(tanqueID,lugarID,fecha); //Esta variable almacena el formato JSON que va a cargarse en el POST.
   Serial.println(stringOutput);
-  hacerPeticion(); //Hacer la peticion POST, no hace falta pasar "stringOutput" porque es una variable global.
+  hacerPeticion(stringOutput); //Hacer la peticion POST, no hace falta pasar "stringOutput" porque es una variable global.
 }
 
 void loop() {
   //Esta vacio ya que no queremos mandar la misma peticion varias veces, por el momento solamente estamos mandandola una vez.
+  Serial.println(getDate(timeClient));
+  delay(5000);
 }
-
-void hacerPeticion(){
-  //Al ser la direccion del servidor tampoco queremos que este de manera global asi que la deje dentro de esta funcion.
-  if(WiFi.status()== WL_CONNECTED){
-    HTTPClient http;   
-    http.begin("http://18.219.108.70:5201/graphql");
-    http.addHeader("Content-Type", "application/json");
-    int httpResponseCode = http.POST(stringOutput);
-    if(httpResponseCode>0){
-      String response = http.getString();   
-      Serial.println(httpResponseCode);
-      Serial.println(response);          
-    }else{
-      Serial.print("Error on sending POST Request: ");
-      Serial.println(httpResponseCode);
-   }
-   http.end();
- }else{
-    Serial.println("Error in WiFi connection");
- }
-}
-
-void entablarConexiones(){
-  //Aqui puse los ssid ya que no queremos que sean variables globales por ser credenciales de seguridad.
-  const char* ssid = "";
-  const char* password = "";
-  Serial.begin(9600);
-  WiFi.begin(ssid, password); 
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.println("Connecting to WiFi..");
-  }
-  Serial.println("Connected to the WiFi network");
-  while (!Serial) continue;
-}
-
+/*
 String createTanqueEsta(String tanqueID, String lugarID, String fecha){
   DynamicJsonDocument  root(200); //Documento raiz del JSON
   root["query"].set("mutation($tank: TanqueEstaInput){createTanqueEsta(tanqueEstaInput: $tank)}");
@@ -115,3 +92,4 @@ String setTanqueEsta(String tanqueID, String lugarID, String fecha){
   serializeJsonPretty(root, Serial);
   return output;
 }
+*/
