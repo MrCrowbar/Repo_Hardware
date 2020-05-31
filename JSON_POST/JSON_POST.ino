@@ -1,6 +1,6 @@
 #include <ArduinoJson.h>
-#include "ESP8266HTTPClient.h"
-#include "ESP8266WiFi.h"
+#include <ESP8266HTTPClient.h>
+#include <ESP8266WiFi.h>
 
 //Declaracion de variables globales.
 char output[500]; //Falta ajustar el tamaño para que no se desperdicie memoria.
@@ -10,7 +10,7 @@ String tanqueID, lugarID, fecha, stringOutput;
 String setTanqueEsta(String tanqueID, String lugarID, String fecha);
 String createTanqueEsta(String tanqueID, String lugarID, String fecha);
 void entablarConexiones();
-void hacerPeticion();
+void hacerPeticion(String peticion);
 
 //En teoria no vamos a crear tanques pero sirve como ejemplo para formular los JSON y para hacer pruebas.
 String createTanque(String tanqueID, String calidad, String estadoValvula, float pesoActual, float peso, String fechaEsperadaRetorno, int idEtiqueta, String idContenido, String idDueno, String fechaIngreso, String observaciones);
@@ -24,26 +24,34 @@ void setup() {
   fecha = String("2122-10-03T10:00:00Z");
   stringOutput = setTanqueEsta(tanqueID,lugarID,fecha); //Esta variable almacena el formato JSON que va a cargarse en el POST.
   Serial.println(stringOutput);
-  hacerPeticion(); //Hacer la peticion POST, no hace falta pasar "stringOutput" porque es una variable global.
+  hacerPeticion("GET"); //Hacer la peticion POST, no hace falta pasar "stringOutput" porque es una variable global.
 }
 
 void loop() {
+  hacerPeticion("GET");
+  delay(3000);
   //Esta vacio ya que no queremos mandar la misma peticion varias veces, por el momento solamente estamos mandandola una vez.
 }
-
-void hacerPeticion(){
+void hacerPeticion(String peticion){
   //Al ser la direccion del servidor tampoco queremos que este de manera global asi que la deje dentro de esta funcion.
   if(WiFi.status()== WL_CONNECTED){
+    WiFiClient client;
     HTTPClient http;   
-    http.begin("http://18.219.108.70:5201/graphql");
+    http.begin(client,"http://192.168.1.66:5000/arduino");
     http.addHeader("Content-Type", "application/json");
-    int httpResponseCode = http.POST(stringOutput);
+    int httpResponseCode = 0;
+    if (peticion == "POST"){
+      httpResponseCode = http.POST(stringOutput);
+    } else {
+      httpResponseCode = http.GET();
+    }
+
     if(httpResponseCode>0){
       String response = http.getString();   
       Serial.println(httpResponseCode);
       Serial.println(response);          
     }else{
-      Serial.print("Error on sending POST Request: ");
+      Serial.print("Error on sending " + peticion + " Request: ");
       Serial.println(httpResponseCode);
    }
    http.end();
@@ -54,15 +62,17 @@ void hacerPeticion(){
 
 void entablarConexiones(){
   //Aqui puse los ssid ya que no queremos que sean variables globales por ser credenciales de seguridad.
-  const char* ssid = "";
-  const char* password = "";
-  Serial.begin(9600);
+  const char* ssid = "INFINITUM9209_2.4";
+  const char* password = "4by3rg4JgD";
+  Serial.begin(115200);
   WiFi.begin(ssid, password); 
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
     Serial.println("Connecting to WiFi..");
   }
   Serial.println("Connected to the WiFi network");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
   while (!Serial) continue;
 }
 
