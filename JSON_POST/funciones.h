@@ -7,21 +7,22 @@
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 
-void entablarConexiones();
+//void entablarConexiones();
 void hacerPeticion(String query);
 String getDate(NTPClient timeClient);
 String setTanqueEsta(String tanqueID, String lugarID, String fecha);
 
 void entablarConexiones(){
   //Aqui puse los ssid ya que no queremos que sean variables globales por ser credenciales de seguridad.
-  const char* ssid = "";
-  const char* password = "";
+  const char* ssid = "INFINITUM9209_2.4"; //INFINITUM9209_2.4
+  const char* password = "4by3rg4JgD"; //4by3rg4JgD
   Serial.begin(9600);
   WiFi.begin(ssid, password); 
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
     Serial.println("Connecting to WiFi..");
   }
+  //conectado = true;
   Serial.println("Connected to the WiFi network");
   while (!Serial) continue;
 }
@@ -29,8 +30,9 @@ void entablarConexiones(){
 void hacerPeticion(String query){
   //Al ser la direccion del servidor tampoco queremos que este de manera global asi que la deje dentro de esta funcion.
   if(WiFi.status()== WL_CONNECTED){
-    HTTPClient http;   
-    http.begin("http://18.219.108.70:5201/graphql");
+    WiFiClient client;
+    HTTPClient http;
+    http.begin(client,"http://192.168.1.66:5000/arduino");//http://192.168.1.66:5000/arduino
     http.addHeader("Content-Type", "application/json");
     int httpResponseCode = http.POST(query);
     if(httpResponseCode>0){
@@ -49,6 +51,8 @@ void hacerPeticion(String query){
 
 String getDate(NTPClient timeClient){
   String fecha; //YYYY-MM-DD
+  String hora; //HH:MM:SS
+  hora = timeClient.getFormattedTime();
   unsigned long epochTime = timeClient.getEpochTime();
   struct tm *p_tm = gmtime((time_t *)&epochTime);
   int monthDay = p_tm->tm_mday;

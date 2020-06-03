@@ -1,6 +1,12 @@
 #include <NTPClient.h>
 #include <WiFiUdp.h>
 #include "funciones.h"
+#include <Ticker.h>
+#include <ESP8266WiFi.h>
+
+Ticker tiempo;
+Ticker conectividad;
+
 
 #define GMT_MEXICO -18000
 #define OUTPUT_SIZE 500
@@ -15,81 +21,89 @@ NTPClient timeClient(ntpUDP, "pool.ntp.org");
 String weekDays[7] = {"Domingo","Lunes","Martes","Miercoles","Jueves","Viernes","Sabado"};
 String months[12] = {"Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"};
 
-//Declaracion de funciones.
-//String setTanqueEsta(String tanqueID, String lugarID, String fecha);
-//String createTanqueEsta(String tanqueID, String lugarID, String fecha);
 
-//En teoria no vamos a crear tanques pero sirve como ejemplo para formular los JSON y para hacer pruebas.
-//String createTanque(String tanqueID, String calidad, String estadoValvula, float pesoActual, float peso, String fechaEsperadaRetorno, int idEtiqueta, String idContenido, String idDueno, String fechaIngreso, String observaciones);
+//Estructura de dato para guardar tiempo local
+struct local_time {
+ int hour;
+ int minute;
+ int second; 
+}_time;
 
+
+//Flag global del estado actual de la conexión
+bool conexionFlagActual = false;
+bool conexionFlagPasado = conexionFlagActual;
+
+//Cambiar flag de conexión
+void conexion(){
+  conexionFlagActual = !conexionFlagActual;
+}
+
+//Se suma a nuestro tiempo local 5 minutos cada 5 minutos.
+void sumarTiempoLocal(){
+  static byte _5minCount = 0;
+  _time.minute += 5;
+  if (_time.minute >= 60){
+    _time.minute = 0;
+    _time.hour += 1;
+    if (_time.hour >= 24){
+      _time.hour = 0;
+    }
+    _5minCount = 0;
+  }
+  _5minCount++;
+  Serial.print("Tiempo local: ");
+  Serial.print("HH:");
+  Serial.print(_time.hour);
+  Serial.print(" MM:");
+  Serial.print(_time.minute);
+  Serial.print(" SS:");
+  Serial.print(_time.second);
+  Serial.print(", minute counter: ");
+  Serial.print(_5minCount);
+  Serial.println();
+}
+
+//Se actualiza el tiempo local cuando sí hay conexión a internet.
+void actualizarTiempoLocal(){
+  _time.hour = timeClient.getHours();
+  _time.minute = timeClient.getMinutes();
+  _time.second = timeClient.getSeconds();
+}
 
 void setup() {
   entablarConexiones(); //Hasta no entablar la conexion no se procede a generar recursos que no se pueden utilizar.
   timeClient.begin();
   timeClient.setTimeOffset(GMT_MEXICO);
   timeClient.update();
-  stringOutput = String();
-  tanqueID = String("EURO5149ZZ");
-  lugarID = String("AMC");
-  fecha = String("2122-10-03T10:00:00Z");
-  stringOutput = setTanqueEsta(tanqueID,lugarID,fecha); //Esta variable almacena el formato JSON que va a cargarse en el POST.
-  Serial.println(stringOutput);
-  hacerPeticion(stringOutput); //Hacer la peticion POST, no hace falta pasar "stringOutput" porque es una variable global.
+  actualizarTiempoLocal();
+  conectividad.attach(10, conexion); //cada 10 segundos cambiamos el flag de conexión
+  tiempo.attach(5, sumarTiempoLocal); //cada 5 segundos accionar la función sumarTiempoLocal
+  
+  //stringOutput = String();
+  //tanqueID = String("EURO5149ZZ");
+  //lugarID = String("AMC");
+  //fecha = String("2122-10-03T10:00:00Z");
+  //stringOutput = setTanqueEsta(tanqueID,lugarID,fecha); //Esta variable almacena el formato JSON que va a cargarse en el POST.
+  //Serial.println(stringOutput);
+  //hacerPeticion(stringOutput); //Hacer la peticion POST, no hace falta pasar "stringOutput" porque es una variable global.
 }
 
 void loop() {
+  //Revisamos el estado de los flags de conexión para actualizar el timeClient y dar el estatus de conexión.
+  if (conexionFlagPasado != conexionFlagActual){
+    if (WiFi.status() == WL_CONNECTED){
+    timeClient.update();
+    actualizarTiempoLocal();
+    Serial.println("Conectado");
+  } else {
+    Serial.println("Desconectado");
+  }
+  Serial.println(WiFi.status());
+  conexionFlagPasado = !conexionFlagPasado;
+  }
+  
   //Esta vacio ya que no queremos mandar la misma peticion varias veces, por el momento solamente estamos mandandola una vez.
-  Serial.println(getDate(timeClient));
-  delay(5000);
+  //Serial.println(timeClient.getFormattedTime());
+  //Serial.println(getDate(timeClient));
 }
-/*
-String createTanqueEsta(String tanqueID, String lugarID, String fecha){
-  DynamicJsonDocument  root(200); //Documento raiz del JSON
-  root["query"].set("mutation($tank: TanqueEstaInput){createTanqueEsta(tanqueEstaInput: $tank)}");
-  JsonObject variables = root.createNestedObject("variables"); //Creacion de objeto anidado "variables" dentro de "root".
-  JsonObject tank = variables.createNestedObject("tank"); //Creacion de objeto anidado "tank" dentro de "variables".
-  JsonObject id = tank.createNestedObject("id"); //Creacion de objeto anidado "id" dentro de "tank".
-  id["idTanque"].set(tanqueID);
-  id["idLugar"].set(lugarID);
-  tank["fecha"].set(fecha);
-  serializeJson(root, output); //Serializar el documento JSON "root" a la variable output en el formato listo a enviar al servidor.
-  serializeJsonPretty(root, Serial); //Imprimir en la terminal de manera completa el JSON generado.
-  return output; //Regresar el archivo que va a cargarse en la peticion POST.
-}
-
-String createTanque(String tanqueID, String calidad, String estadoValvula, float pesoActual, float peso, String fechaEsperadaRetorno, int idEtiqueta, String idContenido, String idDueno, String fechaIngreso, String observaciones){
-  DynamicJsonDocument root(500);
-  root["query"].set("mutation($tank: TanqueInput!){createTanque(tanqueInput: $tank)}");
-  JsonObject variables = root.createNestedObject("variables");
-  JsonObject tank = variables.createNestedObject("tank");
-  tank["id"].set(tanqueID);
-  tank["calidad"].set(calidad);
-  tank["pesoActual"].set(pesoActual);
-  tank["idContenido"].set(idContenido);
-  tank["idDueno"].set(idDueno);
-  tank["fechaIngreso"].set(fechaIngreso);
-  tank["fechaEsperadaRetorno"].set(fechaEsperadaRetorno);
-  tank["idEtiqueta"].set(idEtiqueta);
-  tank["peso"].set(peso);
-  tank["observaciones"].set(observaciones);
-  variables["id"].set(tanqueID);
-  serializeJson(root, output);
-  //Sacar el json root a la terminal bien bonito
-  serializeJsonPretty(root, Serial);
-  return output;
-}
-
-String setTanqueEsta(String tanqueID, String lugarID, String fecha){
-  DynamicJsonDocument root(500);
-  root["query"].set("mutation($tank: TanqueEstaInput!, $id:String!){setTanqueEsta(tanqueEstaInput: $tank, idTanqueEstaOriginal: $id)}");
-  JsonObject variables = root.createNestedObject("variables");
-  JsonObject tank = variables.createNestedObject("tank");
-  tank["id"].set(tanqueID);
-  tank["idLugar"].set(lugarID);
-  tank["fecha"].set(fecha);
-  variables["id"].set(tanqueID);
-  serializeJson(root, output);
-  serializeJsonPretty(root, Serial);
-  return output;
-}
-*/
