@@ -7,7 +7,14 @@
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 
-//void entablarConexiones();
+/*
+typedef struct{
+ int hour;
+ int minute;
+ int second; 
+}local_time;
+*/
+void entablarConexiones();
 void hacerPeticion(String query);
 String getDate(NTPClient timeClient);
 String setTanqueEsta(String tanqueID, String lugarID, String fecha);
