@@ -49,22 +49,22 @@ void setup() {
   entablarConexiones(); //Hasta no entablar la conexion no se procede a generar recursos que no se pueden utilizar.
   timeClient.begin();
   timeClient.setTimeOffset(GMT_MEXICO);
-  for (int i = 0; i < 10; i++){
+  while (!timeClient.update()){
     Serial.println("Updating NTP server time..");
-    timeClient.update();
-    delay(500);
+    timeClient.forceUpdate();
   }
   actualizarTiempoLocal();
-  conectividad.attach(600, conexion); //cada 10 segundos cambiamos el flag de conexión
-  tiempo.attach(300, sumarTiempoLocal); //cada 5 segundos accionar la función sumarTiempoLocal
+  conectividad.attach(10, conexion); //cada 10 segundos cambiamos el flag de conexión
+  tiempo.attach(5, sumarTiempoLocal); //cada 5 segundos accionar la función sumarTiempoLocal
   
-  //stringOutput = String();
-  //tanqueID = String("EURO5149ZZ");
-  //lugarID = String("AMC");
+  stringOutput = String();
+  tanqueID = String("EURO5149ZZ");
+  lugarID = String("AMC");
   //fecha = String("2122-10-03T10:00:00Z");
-  //stringOutput = setTanqueEsta(tanqueID,lugarID,fecha); //Esta variable almacena el formato JSON que va a cargarse en el POST.
+  fecha = getDate(timeClient);
+  stringOutput = setTanqueEsta(tanqueID,lugarID,fecha); //Esta variable almacena el formato JSON que va a cargarse en el POST.
   //Serial.println(stringOutput);
-  //hacerPeticion(stringOutput); //Hacer la peticion POST, no hace falta pasar "stringOutput" porque es una variable global.
+  hacerPeticion(stringOutput); //Hacer la peticion POST, no hace falta pasar "stringOutput" porque es una variable global.
 }
 
 void loop() {
@@ -72,7 +72,10 @@ void loop() {
   if (conexionFlagPasado != conexionFlagActual){
     if (WiFi.status() == WL_CONNECTED){
     timeClient.update();
-    actualizarTiempoLocal();
+    while (!timeClient.update())timeClient.forceUpdate();
+    Serial.println(getDate(timeClient));
+    
+    //actualizarTiempoLocal();
     Serial.println("Conectado");
   } else {
     Serial.println("Desconectado");
@@ -80,10 +83,7 @@ void loop() {
   Serial.println(WiFi.status());
   conexionFlagPasado = !conexionFlagPasado;
   }
-  
   //Esta vacio ya que no queremos mandar la misma peticion varias veces, por el momento solamente estamos mandandola una vez.
-  //Serial.println(timeClient.getFormattedTime());
-  //Serial.println(getDate(timeClient));
 }
 
 //Se suma a nuestro tiempo local 5 minutos cada 5 minutos.
@@ -99,15 +99,10 @@ void sumarTiempoLocal(){
     _5minCount = 0;
   }
   _5minCount++;
+  String hora;
+  hora = "T" + String(_time.hour) + ":" + String(_time.minute) + ":" + String(_time.second) + "Z";
   Serial.print("Tiempo local: ");
-  Serial.print("HH:");
-  Serial.print(_time.hour);
-  Serial.print(" MM:");
-  Serial.print(_time.minute);
-  Serial.print(" SS:");
-  Serial.print(_time.second);
-  Serial.print(", minute counter: ");
-  Serial.print(_5minCount);
+  Serial.print(hora);
   Serial.println();
 }
 
@@ -116,12 +111,9 @@ void actualizarTiempoLocal(){
   _time.hour = timeClient.getHours();
   _time.minute = timeClient.getMinutes();
   _time.second = timeClient.getSeconds();
+  String hora;
+  hora = "T" + String(_time.hour) + ":" + String(_time.minute) + ":" + String(_time.second) + "Z";
   Serial.print("Tiempo local: ");
-  Serial.print("HH:");
-  Serial.print(_time.hour);
-  Serial.print(" MM:");
-  Serial.print(_time.minute);
-  Serial.print(" SS:");
-  Serial.print(_time.second);
+  Serial.print(hora);
   Serial.println();
 }
