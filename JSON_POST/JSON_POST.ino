@@ -28,16 +28,18 @@ void setup() {
 }
 
 void loop() {
-  hacerPeticion("GET");
+  hacerPeticion("POST");
   delay(3000);
   //Esta vacio ya que no queremos mandar la misma peticion varias veces, por el momento solamente estamos mandandola una vez.
 }
 void hacerPeticion(String peticion){
   //Al ser la direccion del servidor tampoco queremos que este de manera global asi que la deje dentro de esta funcion.
+  String TOKEN("eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb3JyZW8iOiJmbG9yb0BxdWltb2Jhc2ljb3MuY29tIiwiaWF0IjoxNTkxMjIzMzU3LCJleHAiOjE2MjI3ODA5NTd9.rnKJUiTUARs6mETAG2Y-08iw4V5ZMBsiWQ8KdY6Kyir7x_xbgiuBmBOI_BPsX4Zz5SquIumNC3jmjJJsYi6KfrIS-RNmaJRfIQRTBHEo5DjdngSzPLh_7UK9A-P-YqEl5Grf9Z8y6XfiQJMluqIRsKcsLC5wlCna0pC-lymvArYgyBpw5lUJrF8ZTQfsGVpbH2ZYYhswbDcHv0_tBUmIUv32HXDhA1sNLNEZsFnItqcr3jqFQwG-_0BosuJKj3B395dVxzb8wDrECjNlvFgRl-m6NuZrhFokWCD4aTlM_pw8heX_aYUQgSU8iABP68UluNmuQIgWpkVULvHDGBXpKA");
   if(WiFi.status()== WL_CONNECTED){
     WiFiClient client;
-    HTTPClient http;   
-    http.begin(client,"http://192.168.1.66:5000/arduino");
+    HTTPClient http;
+    http.begin(client,"http://3.12.196.48:5201/graphql");
+    http.addHeader("authorization", TOKEN);
     http.addHeader("Content-Type", "application/json");
     int httpResponseCode = 0;
     if (peticion == "POST"){
@@ -62,8 +64,8 @@ void hacerPeticion(String peticion){
 
 void entablarConexiones(){
   //Aqui puse los ssid ya que no queremos que sean variables globales por ser credenciales de seguridad.
-  const char* ssid = "INFINITUM9209_2.4";
-  const char* password = "4by3rg4JgD";
+  const char* ssid = "INFINITUM8312_2.4";
+  const char* password = "76Mroar07m";
   Serial.begin(115200);
   WiFi.begin(ssid, password); 
   while (WiFi.status() != WL_CONNECTED) {
