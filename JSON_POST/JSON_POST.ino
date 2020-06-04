@@ -31,15 +31,16 @@ void setup() {
   stringOutput = String();
   tanqueID = String("EURO5149ZZ");
   lugarID = String("AMC");
-  fecha = String("2122-10-03T10:00:00Z");
+  fecha = String("3000-10-03T10:00:00Z");
   stringOutput = setTanqueEsta(tanqueID,lugarID,fecha); //Esta variable almacena el formato JSON que va a cargarse en el POST.
   Serial.println(stringOutput);
-  hacerPeticion(stringOutput); //Hacer la peticion POST, no hace falta pasar "stringOutput" porque es una variable global.
+  //hacerPeticion(stringOutput); //Hacer la peticion POST, no hace falta pasar "stringOutput" porque es una variable global.
 }
 
 void loop() {
   //Esta vacio ya que no queremos mandar la misma peticion varias veces, por el momento solamente estamos mandandola una vez.
   Serial.println(getDate(timeClient));
+  hacerPeticion(stringOutput);
   delay(5000);
 }
 /*
