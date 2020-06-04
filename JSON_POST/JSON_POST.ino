@@ -1,37 +1,68 @@
+<<<<<<< HEAD
 #include <ArduinoJson.h>
 #include <ESP8266HTTPClient.h>
 #include <ESP8266WiFi.h>
+=======
+#include <NTPClient.h>
+#include <WiFiUdp.h>
+#include "funciones.h"
+
+#define GMT_MEXICO -18000
+#define OUTPUT_SIZE 500
+>>>>>>> funciones-separadas
 
 //Declaracion de variables globales.
-char output[500]; //Falta ajustar el tamaño para que no se desperdicie memoria.
+char output[OUTPUT_SIZE]; //Falta ajustar el tamaño para que no se desperdicie memoria.
 String tanqueID, lugarID, fecha, stringOutput;
 
+//Servidor para tiempo.
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP, "pool.ntp.org");
+String weekDays[7] = {"Domingo","Lunes","Martes","Miercoles","Jueves","Viernes","Sabado"};
+String months[12] = {"Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"};
+
 //Declaracion de funciones.
+<<<<<<< HEAD
 String setTanqueEsta(String tanqueID, String lugarID, String fecha);
 String createTanqueEsta(String tanqueID, String lugarID, String fecha);
 void entablarConexiones();
 void hacerPeticion(String peticion);
+=======
+//String setTanqueEsta(String tanqueID, String lugarID, String fecha);
+//String createTanqueEsta(String tanqueID, String lugarID, String fecha);
+>>>>>>> funciones-separadas
 
 //En teoria no vamos a crear tanques pero sirve como ejemplo para formular los JSON y para hacer pruebas.
-String createTanque(String tanqueID, String calidad, String estadoValvula, float pesoActual, float peso, String fechaEsperadaRetorno, int idEtiqueta, String idContenido, String idDueno, String fechaIngreso, String observaciones);
+//String createTanque(String tanqueID, String calidad, String estadoValvula, float pesoActual, float peso, String fechaEsperadaRetorno, int idEtiqueta, String idContenido, String idDueno, String fechaIngreso, String observaciones);
 
 
 void setup() {
   entablarConexiones(); //Hasta no entablar la conexion no se procede a generar recursos que no se pueden utilizar.
+  timeClient.begin();
+  timeClient.setTimeOffset(GMT_MEXICO);
+  timeClient.update();
   stringOutput = String();
   tanqueID = String("EURO5149ZZ");
   lugarID = String("AMC");
-  fecha = String("2122-10-03T10:00:00Z");
+  fecha = String("3000-10-03T10:00:00Z");
   stringOutput = setTanqueEsta(tanqueID,lugarID,fecha); //Esta variable almacena el formato JSON que va a cargarse en el POST.
   Serial.println(stringOutput);
+<<<<<<< HEAD
   hacerPeticion("GET"); //Hacer la peticion POST, no hace falta pasar "stringOutput" porque es una variable global.
+=======
+  //hacerPeticion(stringOutput); //Hacer la peticion POST, no hace falta pasar "stringOutput" porque es una variable global.
+>>>>>>> funciones-separadas
 }
 
 void loop() {
   hacerPeticion("POST");
   delay(3000);
   //Esta vacio ya que no queremos mandar la misma peticion varias veces, por el momento solamente estamos mandandola una vez.
+  Serial.println(getDate(timeClient));
+  hacerPeticion(stringOutput);
+  delay(5000);
 }
+<<<<<<< HEAD
 void hacerPeticion(String peticion){
   //Al ser la direccion del servidor tampoco queremos que este de manera global asi que la deje dentro de esta funcion.
   String TOKEN("eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb3JyZW8iOiJmbG9yb0BxdWltb2Jhc2ljb3MuY29tIiwiaWF0IjoxNTkxMjIzMzU3LCJleHAiOjE2MjI3ODA5NTd9.rnKJUiTUARs6mETAG2Y-08iw4V5ZMBsiWQ8KdY6Kyir7x_xbgiuBmBOI_BPsX4Zz5SquIumNC3jmjJJsYi6KfrIS-RNmaJRfIQRTBHEo5DjdngSzPLh_7UK9A-P-YqEl5Grf9Z8y6XfiQJMluqIRsKcsLC5wlCna0pC-lymvArYgyBpw5lUJrF8ZTQfsGVpbH2ZYYhswbDcHv0_tBUmIUv32HXDhA1sNLNEZsFnItqcr3jqFQwG-_0BosuJKj3B395dVxzb8wDrECjNlvFgRl-m6NuZrhFokWCD4aTlM_pw8heX_aYUQgSU8iABP68UluNmuQIgWpkVULvHDGBXpKA");
@@ -78,6 +109,9 @@ void entablarConexiones(){
   while (!Serial) continue;
 }
 
+=======
+/*
+>>>>>>> funciones-separadas
 String createTanqueEsta(String tanqueID, String lugarID, String fecha){
   DynamicJsonDocument  root(200); //Documento raiz del JSON
   root["query"].set("mutation($tank: TanqueEstaInput){createTanqueEsta(tanqueEstaInput: $tank)}");
@@ -127,3 +161,4 @@ String setTanqueEsta(String tanqueID, String lugarID, String fecha){
   serializeJsonPretty(root, Serial);
   return output;
 }
+*/
