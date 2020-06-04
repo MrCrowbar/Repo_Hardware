@@ -11,11 +11,12 @@ void entablarConexiones();
 void hacerPeticion(String query);
 String getDate(NTPClient timeClient);
 String setTanqueEsta(String tanqueID, String lugarID, String fecha);
+
 void entablarConexiones(){
   //Aqui puse los ssid ya que no queremos que sean variables globales por ser credenciales de seguridad.
   const char* ssid = "INFINITUM8312_2.4";
   const char* password = "76Mroar07m";
-  Serial.begin(9600);
+  Serial.begin(115200);
   WiFi.begin(ssid, password); 
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
@@ -51,6 +52,7 @@ void hacerPeticion(String query){
 
 String getDate(NTPClient timeClient){
   String fecha; //YYYY-MM-DD
+  timeClient.update();
   unsigned long epochTime = timeClient.getEpochTime();
   struct tm *p_tm = gmtime((time_t *)&epochTime);
   int monthDay = p_tm->tm_mday;
