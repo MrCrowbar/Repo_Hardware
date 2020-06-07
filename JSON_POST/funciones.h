@@ -14,8 +14,8 @@ String setTanqueEsta(String tanqueID, String lugarID, String fecha);
 
 void entablarConexiones(){
   //Aqui puse los ssid ya que no queremos que sean variables globales por ser credenciales de seguridad.
-  const char* ssid = "INFINITUM8312_2.4"; //INFINITUM9209_2.4
-  const char* password = "76Mroar07m"; //4by3rg4JgD
+  const char* ssid = "INFINITUM9209_2.4"; //INFINITUM9209_2.4 INFINITUM8312_2.4
+  const char* password = "4by3rg4JgD"; //4by3rg4JgD 76Mroar07m
   Serial.begin(115200);
   WiFi.begin(ssid, password); 
   while (WiFi.status() != WL_CONNECTED) {
@@ -54,26 +54,7 @@ bool hacerPeticion(String query){
  return respuesta;
 }
 
-/*
-String getDate(NTPClient timeClient){
-  String fecha; //YYYY-MM-DD
-  String hora; //HH:MM:SS
-  String mes;
-  String dia;
-  hora = timeClient.getFormattedTime();
-  unsigned long epochTime = timeClient.getEpochTime();
-  struct tm *p_tm = gmtime((time_t *)&epochTime);
-  int monthDay = p_tm->tm_mday;
-  int currentMonth = p_tm->tm_mon+1;
-  int currentYear = p_tm->tm_year+1900;
-  if (monthDay < 10) dia = "0" + String(monthDay);
-  if (currentMonth < 10) mes = "0" + String(currentMonth);
-  fecha = String(currentYear) + "-" + mes + "-" + dia + "T" + hora + "Z";
-  return fecha;
-}
-*/
-
-String setTanqueEsta(String tanqueID, String lugarID, String fecha){
+String setTanqueEsta(byte tanqueID, String lugarID, String fecha){
   String output;
   DynamicJsonDocument root(500);
   root["query"].set("mutation($tank: TanqueEstaInput!, $id:String!){setTanqueEsta(tanqueEstaInput: $tank, idTanqueEstaOriginal: $id)}");
