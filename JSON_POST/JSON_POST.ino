@@ -102,7 +102,7 @@ void setup() {
   //En caso de cambiar tiempo.attach() deben también cambiar el in
   conectividad.attach(INTERVALO_CONEXION*60, conexion); //cada 10 segundos cambiamos el flag de conexión
   tiempo.attach(INTERVALO_TIEMPO_LOCAL, sumarTiempoLocal); //cada 5 segundos accionar la función sumarTiempoLocal
-  prueba.attach(60,funcion_prueba);
+  prueba.attach(10,funcion_prueba);
   Serial.println("Setup exitoso, procediendo a void loop");
 }
 
@@ -141,10 +141,10 @@ void loop() {
   
   //Cuando se detecta una lectura se procede a lo siguiente
   //if (conexion2 != conexion1){
-    if(revisa_lectura) {
+    if(revisa_lectura()) {
     Serial.println("Tarjeta detectada");
-    crearPeticion(getTanqueID(binToInt(tag_Data)));
-    //crearPeticion(getTanqueID(6));
+    //crearPeticion(getTanqueID(binToInt(tag_Data)));
+    crearPeticion(getTanqueID(1));
     if (hacerPeticionID(queue_peticion_id.getHead().queryID, &id_tanque_peticion)){
       crearTanque(id_tanque_peticion,queue_peticion_id.getHead().fecha); //Si peticion exitosa borrar queue de peticion y crear tanque en queue de tanques
       queue_peticion_id.dequeue();
@@ -158,7 +158,7 @@ void loop() {
     Serial.print("No de items en queue de petición: ");
     Serial.print(queue_peticion_id.getHead().fecha + " - ");
     Serial.println(queue_peticion_id.itemCount());
-    conexion2 = !conexion2;
+    //conexion2 = !conexion2;
   }
 }
 
@@ -225,7 +225,7 @@ void sumarTiempoLocal(){
   _time.tiempo = String(_time.year) + "-" + mes + "-" + dia + "T" + hora + ":" + minuto + ":" + segundo + "Z";
   //Serial.print("Sumando a tiempo local: ");
   //Serial.print(_time.tiempo);
-  Serial.println();
+  //Serial.println();
 }
 
 //Actualizar hora local con el servidor NTP
