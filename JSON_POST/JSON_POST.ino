@@ -8,8 +8,8 @@
 #define GMT_MEXICO -18000 //Ajustar tiempo internacional a México en segundos
 #define OUTPUT_SIZE 500 //Salida para el JSON
 
-#define INTERVALO_CONEXION 600 //Intervalo en segundos de revisar la conexión
-#define INTERVALO_TIEMPO_LOCAL 60 //Intervalo en segundos para sumar los minutos del tiempo local, no puede ser menos de 60
+#define INTERVALO_CONEXION 5 //Intervalo en minutos de revisar la conexión
+#define INTERVALO_TIEMPO_LOCAL 1 //Intervalo en segundos para sumar los minutos del tiempo local, no puede ser menos de 60
 
 const String LUGAR_ID = "AMC"; 
 
@@ -36,6 +36,7 @@ NTPClient timeClient(ntpUDP, "pool.ntp.org");
 //Clases de tickers
 Ticker tiempo;
 Ticker conectividad;
+Ticker prueba;
 
 //Queue de peticion para ID
 struct peticion_ID {
@@ -68,10 +69,17 @@ struct local_time {
 bool conexionFlagActual = false;
 bool conexionFlagPasado = conexionFlagActual;
 
+//Flags de prueba
+bool conexion1 = false;
+bool conexion2 = conexion1;
 
 //Sumar tiempo local
 void sumarTiempoLocal();
 
+//funcion de prueba
+void funcion_prueba(){
+  conexion1 = !conexion1;
+}
 
 //Cambiar flag de conexión
 void conexion(){
@@ -93,7 +101,8 @@ void setup() {
   //El entero que va como argumento dentro de attach define cada cuándo se llama el ticker.
   //En caso de cambiar tiempo.attach() deben también cambiar el in
   conectividad.attach(INTERVALO_CONEXION*60, conexion); //cada 10 segundos cambiamos el flag de conexión
-  tiempo.attach(INTERVALO_TIEMPO_LOCAL*60, sumarTiempoLocal); //cada 5 segundos accionar la función sumarTiempoLocal
+  tiempo.attach(INTERVALO_TIEMPO_LOCAL, sumarTiempoLocal); //cada 5 segundos accionar la función sumarTiempoLocal
+  prueba.attach(60,funcion_prueba);
   Serial.println("Setup exitoso, procediendo a void loop");
 }
 
@@ -110,7 +119,7 @@ void loop() {
       Serial.print(_time.tiempo);
       if (queue_peticion_id.itemCount() > 0){
         Serial.println("Reintentando enviar peticiónID al servidor");
-        if (hacerPeticionID(queue_peticion_id.getHead().queryID,id_tanque_peticion)){
+        if (hacerPeticionID(queue_peticion_id.getHead().queryID, &id_tanque_peticion)){
           crearTanque(id_tanque_peticion, queue_peticion_id.getHead().fecha);
           queue_peticion_id.dequeue();
         }
@@ -131,10 +140,12 @@ void loop() {
   }
   
   //Cuando se detecta una lectura se procede a lo siguiente
-  if (revisa_lectura()){
+  //if (conexion2 != conexion1){
+    if(revisa_lectura) {
     Serial.println("Tarjeta detectada");
     crearPeticion(getTanqueID(binToInt(tag_Data)));
-    if (hacerPeticionID(queue_peticion_id.getHead().queryID,id_tanque_peticion)){
+    //crearPeticion(getTanqueID(6));
+    if (hacerPeticionID(queue_peticion_id.getHead().queryID, &id_tanque_peticion)){
       crearTanque(id_tanque_peticion,queue_peticion_id.getHead().fecha); //Si peticion exitosa borrar queue de peticion y crear tanque en queue de tanques
       queue_peticion_id.dequeue();
       stringOutput = setTanqueEsta(queue_tanque.getHead().idTanque, queue_tanque.getHead().idLugar, queue_tanque.getHead().fecha);
@@ -145,7 +156,9 @@ void loop() {
     }
     else Serial.println("Petición de ID fallida, no se borra petición de queue");
     Serial.print("No de items en queue de petición: ");
+    Serial.print(queue_peticion_id.getHead().fecha + " - ");
     Serial.println(queue_peticion_id.itemCount());
+    conexion2 = !conexion2;
   }
 }
 
@@ -184,27 +197,34 @@ void sumarTiempoLocal(){
   String minuto;
   String dia;
   String mes;
+  String segundo;
  
-  _time.minute += (INTERVALO_TIEMPO_LOCAL);
-  if (_time.minute >= 60){
-    _time.minute = 0;
-    _time.hour += 1;
-    if (_time.hour >= 24){
-      _time.hour = 0;
+  _time.second += (INTERVALO_TIEMPO_LOCAL);
+  if (_time.second >= 60){
+    _time.second = 0;
+    _time.minute++;
+    if (_time.minute >= 60){
+      _time.minute = 0;
+      _time.hour++;
+      if (_time.hour >= 24){
+        _time.hour = 0;
+      }
     }
   }
   hora = String(_time.hour);
   minuto = String(_time.minute);
   dia = String(_time.day);
   mes = String(_time.month);
+  segundo = String(_time.second);
   if (_time.hour < 10) hora = "0" + String(_time.hour);
   if (_time.minute < 10) minuto = "0" + String(_time.minute);
   if (_time.day < 10) dia = "0" + String(_time.day);
   if (_time.month < 10) mes = "0" + String(_time.month);
+  if (_time.second < 10) segundo = "0" + String(_time.second);
   
-  _time.tiempo = String(_time.year) + "-" + mes + "-" + dia + "T" + hora + ":" + minuto + ":" + String(_time.second) + "Z";
-  Serial.print("Sumando a tiempo local: ");
-  Serial.print(_time.tiempo);
+  _time.tiempo = String(_time.year) + "-" + mes + "-" + dia + "T" + hora + ":" + minuto + ":" + segundo + "Z";
+  //Serial.print("Sumando a tiempo local: ");
+  //Serial.print(_time.tiempo);
   Serial.println();
 }
 
