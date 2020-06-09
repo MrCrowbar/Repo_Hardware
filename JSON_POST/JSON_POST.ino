@@ -8,9 +8,10 @@
 #define GMT_MEXICO -18000 //Ajustar tiempo internacional a México en segundos
 #define OUTPUT_SIZE 500 //Salida para el JSON
 
-#define INTERVALO_CONEXION 300 //Intervalo en segundos de revisar la conexión
-#define INTERVALO_TIEMPO_LOCAL 60 //Intervalo en segundos para sumar los minutos del tiempo local
+#define INTERVALO_CONEXION 600 //Intervalo en segundos de revisar la conexión
+#define INTERVALO_TIEMPO_LOCAL 60 //Intervalo en segundos para sumar los minutos del tiempo local, no puede ser menos de 60
 
+const String LUGAR_ID = "AMC"; 
 
 //----------Variables del lector RFID---------------------------------
 #define bit_size 34
@@ -26,6 +27,7 @@ int w1 = 1; //Valor de entrada Wiegand D1
 //Declaracion de variables globales.
 char output[OUTPUT_SIZE]; //Falta ajustar el tamaño para que no se desperdicie memoria.
 String stringOutput; //Variable para almacenar el JSON que va a la petición.
+String id_tanque_peticion;
 
 //Servidor para tiempo.
 WiFiUDP ntpUDP;
@@ -35,11 +37,17 @@ NTPClient timeClient(ntpUDP, "pool.ntp.org");
 Ticker tiempo;
 Ticker conectividad;
 
+//Queue de peticion para ID
+struct peticion_ID {
+  String queryID;
+  String fecha;
+};
+ArduinoQueue<peticion_ID> queue_peticion_id(10);
 
 //Estructura de dato para guardar tanques detectados
 struct tanque {
   String idLugar;
-  byte idTanque;
+  String idTanque;
   String fecha;
 };
 ArduinoQueue<tanque> queue_tanque(10);
@@ -61,7 +69,7 @@ bool conexionFlagActual = false;
 bool conexionFlagPasado = conexionFlagActual;
 
 
-//Sumer tiempo local 5 minutos cada 5 minutos
+//Sumar tiempo local
 void sumarTiempoLocal();
 
 
@@ -84,8 +92,8 @@ void setup() {
   getDate();
   //El entero que va como argumento dentro de attach define cada cuándo se llama el ticker.
   //En caso de cambiar tiempo.attach() deben también cambiar el in
-  conectividad.attach(INTERVALO_CONEXION, conexion); //cada 10 segundos cambiamos el flag de conexión
-  tiempo.attach(INTERVALO_TIEMPO_LOCAL, sumarTiempoLocal); //cada 5 segundos accionar la función sumarTiempoLocal
+  conectividad.attach(INTERVALO_CONEXION*60, conexion); //cada 10 segundos cambiamos el flag de conexión
+  tiempo.attach(INTERVALO_TIEMPO_LOCAL*60, sumarTiempoLocal); //cada 5 segundos accionar la función sumarTiempoLocal
   Serial.println("Setup exitoso, procediendo a void loop");
 }
 
@@ -100,6 +108,21 @@ void loop() {
       getDate();
       Serial.print("Actualización de tiempo local con NTP: ");
       Serial.print(_time.tiempo);
+      if (queue_peticion_id.itemCount() > 0){
+        Serial.println("Reintentando enviar peticiónID al servidor");
+        if (hacerPeticionID(queue_peticion_id.getHead().queryID,id_tanque_peticion)){
+          crearTanque(id_tanque_peticion, queue_peticion_id.getHead().fecha);
+          queue_peticion_id.dequeue();
+        }
+      }
+      if (queue_tanque.itemCount() > 0){
+        Serial.println("Reintentando enviar setTanqueEsta al servidor");
+        stringOutput = setTanqueEsta(queue_tanque.getHead().idTanque,queue_tanque.getHead().idLugar,queue_tanque.getHead().fecha); //Crear JSON del tanque
+        if(hacerPeticion(stringOutput))queue_tanque.dequeue(); //Si petición exitosa borrar tanque del queue
+        else Serial.println("Petición fallida, no se borra tanque de queue"); //Si petición fallida no borrar tanque del queue
+        Serial.print("No de items de queue: ");
+        Serial.println(queue_tanque.itemCount());
+      }
     } else {
     Serial.println("Desconectado");
   }
@@ -110,23 +133,39 @@ void loop() {
   //Cuando se detecta una lectura se procede a lo siguiente
   if (revisa_lectura()){
     Serial.println("Tarjeta detectada");
-    crearTanque(binToInt(tag_Data)); //crear nuevo tanque con binToInt()
-    stringOutput = setTanqueEsta(queue_tanque.getHead().idTanque,queue_tanque.getHead().idLugar,queue_tanque.getHead().fecha); //Crear JSON del tanque
-    if(hacerPeticion(stringOutput))queue_tanque.dequeue(); //Si petición exitosa borrar tanque del queue
-    else Serial.println("Petición fallida, no se borra tanque de queue"); //Si petición fallida no borrar tanque del queue
-    Serial.print("No de items de queue: ");
-    Serial.println(queue_tanque.itemCount());
+    crearPeticion(getTanqueID(binToInt(tag_Data)));
+    if (hacerPeticionID(queue_peticion_id.getHead().queryID,id_tanque_peticion)){
+      crearTanque(id_tanque_peticion,queue_peticion_id.getHead().fecha); //Si peticion exitosa borrar queue de peticion y crear tanque en queue de tanques
+      queue_peticion_id.dequeue();
+      stringOutput = setTanqueEsta(queue_tanque.getHead().idTanque, queue_tanque.getHead().idLugar, queue_tanque.getHead().fecha);
+      if(hacerPeticion(stringOutput))queue_tanque.dequeue(); //Si petición exitosa borrar tanque del queue
+      else Serial.println("Petición fallida, no se borra tanque de queue"); //Si petición fallida no borrar tanque del queue
+      Serial.print("No de items en queue de tanques: ");
+      Serial.println(queue_tanque.itemCount());
+    }
+    else Serial.println("Petición de ID fallida, no se borra petición de queue");
+    Serial.print("No de items en queue de petición: ");
+    Serial.println(queue_peticion_id.itemCount());
   }
 }
 
+//Añadir nuevo ID request al queue_peticion_id
+void crearPeticion(String query){
+  struct peticion_ID _peticionID;
+  _peticionID.queryID = query;
+  _peticionID.fecha = _time.tiempo;
+  queue_peticion_id.enqueue(_peticionID);
+  Serial.println("Añadiendo nueva peticion a queue: " + String(queue_peticion_id.getHead().queryID));
+}
+
 //Añadir nuevo tanque al queue_tanque
-void crearTanque(byte _idTanque){
+void crearTanque(String _idTanque, String _fecha){
   struct tanque _tanque;
   _tanque.idLugar = "AMC";
   _tanque.idTanque = _idTanque;
-  _tanque.fecha = _time.tiempo;
+  _tanque.fecha = _fecha;
   queue_tanque.enqueue(_tanque);
-  byte idTanque = queue_tanque.getHead().idTanque;
+  String idTanque = queue_tanque.getHead().idTanque;
   String idLugar = queue_tanque.getHead().idLugar;
   String fecha = queue_tanque.getHead().fecha;
   Serial.println("Añadiendo nuevo tanque con lo siguiente: ");
@@ -146,7 +185,7 @@ void sumarTiempoLocal(){
   String dia;
   String mes;
  
-  _time.minute += INTERVALO_TIEMPO_LOCAL;
+  _time.minute += (INTERVALO_TIEMPO_LOCAL);
   if (_time.minute >= 60){
     _time.minute = 0;
     _time.hour += 1;
