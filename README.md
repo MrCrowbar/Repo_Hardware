@@ -9,4 +9,6 @@ El programa cuenta con mecanismos de validación de conectividad a WIFI/servidor
 
 Aparte de esto cuenta con un reloj local en caso de que no se pueda actualizar la hora actual con el servidor NTP
 
+Programa escrito y diseñado para el dispositivo nodeMCU 8266.
+
 Equipo de hardware - 12/06/2020
