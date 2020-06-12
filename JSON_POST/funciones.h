@@ -1,17 +1,22 @@
 #ifndef funciones
 #define funciones
+//Este archivo contiene las funciones utilizadas para hacer peticiones al servidor 
+//y para inicializar las conexiones.
 
+//Incluír librerías necesarias
 #include <ArduinoJson.h>
 #include "ESP8266HTTPClient.h"
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 
+//Declaración de funciones
 void entablarConexiones();
 bool hacerPeticion(String query);
 bool hacerPeticionID(String query, String* id_tanque_peticion);
 String getTanqueID(int tag_ID);
 String setTanqueEsta(String tanqueID, String lugarID, String fecha);
 
+//Función para conectarse a la red WIFI e iniciar el serial a 115200
 void entablarConexiones(){
   //Aqui puse los ssid ya que no queremos que sean variables globales por ser credenciales de seguridad.
   const char* ssid = "INFINITUM9209_2.4"; //INFINITUM9209_2.4 INFINITUM8312_2.4
@@ -26,6 +31,7 @@ void entablarConexiones(){
   while (!Serial) continue;
 }
 
+//Función para hacer una petición POST al servidor y actualizar el lugar del tanque registrado.
 bool hacerPeticion(String query){
   bool respuesta = true;
   //Al ser la direccion del servidor tampoco queremos que este de manera global asi que la deje dentro de esta funcion.
@@ -54,6 +60,7 @@ bool hacerPeticion(String query){
  return respuesta;
 }
 
+//Solicitar al servidor el id del tanque correspondiente al id de la etiqueta
 bool hacerPeticionID(String query, String* id_tanque_peticion){
   bool estado_salida = true;
   //Al ser la direccion del servidor tampoco queremos que este de manera global asi que la deje dentro de esta funcion.
@@ -88,6 +95,7 @@ bool hacerPeticionID(String query, String* id_tanque_peticion){
  return estado_salida;
 }
 
+//Convertir el id de la etiqueta a formato JSON para enviarlo al servidor
 String getTanqueID(int tag_ID){
   String output;
   DynamicJsonDocument root(500);
@@ -97,6 +105,7 @@ String getTanqueID(int tag_ID){
   return output;
 }
 
+//Generar el JSON final que actualiza el lugar del tanque al servidor.
 String setTanqueEsta(String tanqueID, String lugarID, String fecha){
   String output;
   DynamicJsonDocument root(500);

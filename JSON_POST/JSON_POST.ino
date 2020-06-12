@@ -1,17 +1,25 @@
+/*
+ Este es el archivo principal que contiene la mayoría de la lógica del programa,
+ en el apartado "Declaración de variables globales" se encuentra la variable
+ const String LUGAR_ID la cuál almacena el lugar en el que se instaló el lector.
+ Asegurarse de instalar las librerías necesarias mediante el manejador de librerías del IDE de Arduino
+ antes de compilar/subir el programa al nodeESP8266.
+ */
+//----------Incluír librerías necesarias-------------
 #include <ArduinoQueue.h>
 #include <NTPClient.h>
 #include <WiFiUdp.h>
 #include "funciones.h"
 #include <Ticker.h>
 #include <ESP8266WiFi.h>
+//---------------------------------------------
 
+//Definición de valores a utilizar en el cuerpo principal
 #define GMT_MEXICO -18000 //Ajustar tiempo internacional a México en segundos
 #define OUTPUT_SIZE 500 //Salida para el JSON
 
 #define INTERVALO_CONEXION 5 //Intervalo en minutos de revisar la conexión
 #define INTERVALO_TIEMPO_LOCAL 1 //Intervalo en segundos para sumar los minutos del tiempo local, no puede ser menos de 60
-
-const String LUGAR_ID = "AMC"; 
 
 //----------Variables del lector RFID---------------------------------
 #define bit_size 34
@@ -28,6 +36,7 @@ int w1 = 1; //Valor de entrada Wiegand D1
 char output[OUTPUT_SIZE]; //Falta ajustar el tamaño para que no se desperdicie memoria.
 String stringOutput; //Variable para almacenar el JSON que va a la petición.
 String id_tanque_peticion;
+const String LUGAR_ID = "AMC"; 
 
 //Servidor para tiempo.
 WiFiUDP ntpUDP;
@@ -36,7 +45,6 @@ NTPClient timeClient(ntpUDP, "pool.ntp.org");
 //Clases de tickers
 Ticker tiempo;
 Ticker conectividad;
-Ticker prueba;
 
 //Queue de peticion para ID
 struct peticion_ID {
@@ -71,17 +79,16 @@ bool conexionFlagPasado = conexionFlagActual;
 
 //Flags de prueba
 bool conexion1 = false;
-bool conexion2 = conexion1;
 
-//Sumar tiempo local
+//Declaración de funciones a utilizar
 void sumarTiempoLocal();
+void crearPeticion(String query);
+void crearTanque(String _idTanque, String _fecha);
+void getDate();
+int binToInt(String in);
+bool revisa_lectura();
 
-//funcion de prueba
-void funcion_prueba(){
-  conexion1 = !conexion1;
-}
-
-//Cambiar flag de conexión
+//Cambiar flag de conexión para detonar un cambio de estado
 void conexion(){
   conexionFlagActual = !conexionFlagActual;
 }
@@ -102,7 +109,6 @@ void setup() {
   //En caso de cambiar tiempo.attach() deben también cambiar el in
   conectividad.attach(INTERVALO_CONEXION*60, conexion); //cada 10 segundos cambiamos el flag de conexión
   tiempo.attach(INTERVALO_TIEMPO_LOCAL, sumarTiempoLocal); //cada 5 segundos accionar la función sumarTiempoLocal
-  prueba.attach(10,funcion_prueba);
   Serial.println("Setup exitoso, procediendo a void loop");
 }
 
@@ -140,7 +146,6 @@ void loop() {
   }
   
   //Cuando se detecta una lectura se procede a lo siguiente
-  //if (conexion2 != conexion1){
     if(revisa_lectura()) {
     Serial.println("Tarjeta detectada");
     //crearPeticion(getTanqueID(binToInt(tag_Data)));
@@ -158,7 +163,6 @@ void loop() {
     Serial.print("No de items en queue de petición: ");
     Serial.print(queue_peticion_id.getHead().fecha + " - ");
     Serial.println(queue_peticion_id.itemCount());
-    //conexion2 = !conexion2;
   }
 }
 
@@ -223,9 +227,6 @@ void sumarTiempoLocal(){
   if (_time.second < 10) segundo = "0" + String(_time.second);
   
   _time.tiempo = String(_time.year) + "-" + mes + "-" + dia + "T" + hora + ":" + minuto + ":" + segundo + "Z";
-  //Serial.print("Sumando a tiempo local: ");
-  //Serial.print(_time.tiempo);
-  //Serial.println();
 }
 
 //Actualizar hora local con el servidor NTP
